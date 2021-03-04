@@ -1,0 +1,76 @@
+{{- /*
+This is for worker deployment
+*/}}
+
+{{- if .Values.workers -}}
+{{- range $i, $val := .Values.workers }}
+apiVersion: apps/v1
+kind: Deployment
+metadata: 
+  name: {{ $val.name }}-worker-deployment
+spec:
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 50%
+      maxSurge: 100%
+  minReadySeconds: 10 
+  selector:
+    matchLabels:
+      app: {{ $val.name }}-pod
+      {{- range $key, $val := $val.label }}
+      {{ $key }}: {{ $val }}
+      {{- end }}
+  replicas: {{ $val.replicas | default 1 | int }}
+  template:
+    metadata:
+      labels:
+        app: {{ $val.name }}-pod
+        {{- range $k, $v := $val.label }}
+        {{ $k }}: {{ $v }}
+        {{- end }}
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/config.yaml") $ | sha256sum | trunc 10 }}
+        checksum/secret: {{ include (print $.Template.BasePath "/secrets.yaml") $ | sha256sum | trunc 10 }}
+    spec:
+      {{- with $.Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+      - name: {{ $val.name }}-container
+        image: "{{ $.Values.image.repository }}:{{ $.Values.image.tag | default $.Chart.AppVersion }}"
+        imagePullPolicy: {{ $.Values.image.pullPolicy }}
+        {{- if $val.probes -}}
+        {{- toYaml $val.probes | nindent 8}}
+        {{- end }}
+        command: {{ if not $val.command }} [] {{ end }}
+        {{- if $val.command -}}
+        {{ toYaml $val.command | nindent 8 }}
+        {{- end }}
+        args: {{ if not $val.args }} [] {{ end }}
+        {{- if $val.args -}}
+        {{ toYaml $val.args | nindent 8 }}
+        {{- end }}
+        {{- if $val.probes -}}
+        {{ toYaml $val.probes | nindent 8 }}
+        {{- end }}
+        envFrom:
+        - configMapRef:
+            name: {{ include "general.fullname" $ }}
+            name: {{ $val.name }}-config
+        - secretRef:
+            name: {{ include "general.fullname" $ }}
+            name: {{ $val.name }}-secret
+        {{- if $val.probes -}}
+        {{ toYaml $val.probes | nindent 8 }}
+        {{- end }}
+        resources: 
+        {{- if $.Values.workerTemplate -}}
+        {{ toYaml $.Values.workerTemplate.resources | nindent 10 }} 
+        {{- else -}}
+        {{ toYaml $.Values.resources | nindent 10 }}
+        {{- end }}
+---
+{{- end }}
+{{- end -}}

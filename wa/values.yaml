@@ -1,0 +1,147 @@
+
+# helm -n cool upgrade nginx -f ./general/values.yaml ./general
+replicaCount: 1
+
+image:
+  repository: nginx
+  version: 
+  pullPolicy: IfNotPresent
+  # Overrides the image tag whose default is the chart appVersion.
+  tag: "latest"
+
+imagePullSecrets: []
+# - name: abc
+
+command: []
+args: []
+
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  create: true
+  annotations: {}
+  # The name of the service account to use.
+  # If not set and create is true, a name is generated using the fullname template
+  name: ""
+
+podSecurityContext: {}
+
+securityContext: {}
+
+# default port name is http and protocol is "TCP" 
+port: 80 # container port
+
+service:
+  type: ClusterIP
+  port: 8000
+
+ingress:
+  enabled: true
+  annotations: {}
+    # kubernetes.io/ingress.class: nginx
+    # kubernetes.io/tls-acme: "true"
+  hosts:
+    - host: juno
+      paths:
+      - path: /
+  tls: []
+  #  - secretName: chart-example-tls
+  #    hosts:
+  #      - chart-example.local
+
+resources: 
+  requests:
+    memory: 250Mi
+    cpu: 250m
+  limits:
+    memory: 500Mi
+    cpu: 500m
+
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 100
+  targetCPUUtilizationPercentage: 80
+  # targetMemoryUtilizationPercentage: 80
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}
+
+probes: 
+  livenessProbe:
+    initialDelaySeconds: 10
+    timeoutSeconds: 7
+    periodSeconds: 2
+    httpGet:
+      path: /
+      port: 80
+  readinessProbe:
+    initialDelaySeconds: 5
+    timeoutSeconds: 7
+    periodSeconds: 2
+    httpGet:
+      path: /
+      port: 80
+
+
+# ConfigMap variables
+config:
+  MYSQL_HOST: "mysqli"
+  MYSQL_USERNAME: "something"
+
+# Secrets variable ; supply base 64
+secrets:
+  MYSQL_PASSWORD: "d2VfYXJlX3RvX2dvb2Q="
+
+workerTemplate:
+  resources:
+    requests:
+      cpu: 250m
+      memory: 250Mi
+    limits:
+      cpu: 550m
+      memory: 500Mi
+
+workers:
+  - replicas: 1
+    name: two
+    label:
+      app: two
+    command: []
+    args: []
+    resources: {}
+    config: {}
+    # some: xyz
+    secrets: {}
+    # secret: Base64
+    probes: {}
+
+  - replicas: 1
+    name: one
+    label:
+      app: one
+    command: []
+    args: []
+    resources: {}
+    config: {}
+    secrets: {}
+    probes: {}
+      # livenessProbe:
+      #   initialDelaySeconds: 10
+      #   timeoutSeconds: 7
+      #   periodSeconds: 2
+      #   httpGet:
+      #     path: /
+      #     port: 5000
+      # readinessProbe:
+      #   initialDelaySeconds: 5
+      #   timeoutSeconds: 7
+      #   periodSeconds: 2
+      #   httpGet:
+      #     path: /
+      #     port: 5000
+  

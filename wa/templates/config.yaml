@@ -1,0 +1,28 @@
+
+{{- if .Values.config -}}
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: {{ include "general.fullname" $ }}
+data:
+  {{- toYaml .Values.config | nindent 2 }}
+{{- end }}
+
+---
+
+{{- if .Values.workers -}}
+{{- range $i, $val := .Values.workers }}
+
+
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: {{ $val.name }}-config
+data:
+  {{- toYaml $val.config | nindent 2 }}
+
+---
+
+{{- end -}}
+{{- end -}}
+
